@@ -58,27 +58,36 @@
 
     // 2. SECURITY BRIDGE LOGIC
     async function checkAccess() {
-        const userKey = prompt("Enter License Key:");
-        if (!userKey) return;
+    const userKey = prompt("Enter License Key:");
+    if (!userKey) return;
 
-        status.className = "";
-        status.innerText = "Verifying license...";
+    status.className = "";
+    status.innerText = "Verifying license and device...";
 
-        try {
-            const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(userKey)}`);
-            const result = await response.json();
+    // 1. GENERATE FINGERPRINT
+    // This combines browser type, screen resolution, and language
+    const fingerprint = navigator.userAgent + window.screen.width + window.screen.height + navigator.language;
 
-            if (result.authorized) {
-                authScreen.style.display = "none";
-                appContent.style.display = "block";
-                localStorage.setItem('phantom_key', userKey);
-            } else {
-                alert("Invalid Key! Please contact Fahad Ahmad.");
-            }
-        } catch (err) {
-            alert("Connection error. Ensure your script is deployed correctly.");
+    try {
+        // 2. SEND KEY AND FINGERPRINT
+        // Note the added "&info=" part in the URL
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(userKey)}&info=${encodeURIComponent(fingerprint)}`);
+        const result = await response.json();
+
+        if (result.authorized) {
+            authScreen.style.display = "none";
+            appContent.style.display = "block";
+            localStorage.setItem('phantom_key', userKey);
+            
+            if(result.message) alert(result.message); // Shows "Key activated on this device!"
+        } else {
+            alert(result.message || "Invalid Key!");
         }
+    } catch (err) {
+        console.error(err);
+        alert("Connection error. Ensure your script is deployed as 'Anyone'.");
     }
+}
 
     // Auto-check if they already logged in recently
     if (localStorage.getItem('phantom_key')) {
