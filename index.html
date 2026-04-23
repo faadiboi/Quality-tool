@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phantom Quality Tool - Web</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: white; text-align: center; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1a1a1a; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 450px; border: 1px solid #333; }
+        h2 { color: #2196F3; letter-spacing: 2px; margin-bottom: 30px; }
+        .input-group { text-align: left; margin-bottom: 20px; }
+        label { display: block; color: #888; font-size: 0.9em; margin-bottom: 8px; }
+        input[type="number"], input[type="file"] { width: 100%; padding: 12px; background: #262626; border: 1px solid #444; border-radius: 8px; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; margin-top: 20px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1em; }
+        button:hover { background: #1976D2; transform: translateY(-2px); }
+        button:disabled { background: #555; cursor: not-allowed; }
+        #status { margin-top: 20px; font-size: 0.9em; min-height: 1.2em; }
+        .success { color: #4CAF50; }
+        .error { color: #F44336; }
+        #app-content { display: none; } /* Hidden until authorized */
+    </style>
+</head>
+<body>
+
+<div id="auth-screen" style="display: block;">
+    <div class="card">
+        <h2>SECURITY CHECK</h2>
+        <p>This tool is private. Please enter your license key.</p>
+        <button onclick="checkAccess()">ACTIVATE TOOL</button>
+    </div>
+</div>
+
+<div id="app-content">
+    <div class="card">
+        <h2>PHANTOM QUALITY TOOL</h2>
+        
+        <div class="input-group">
+            <label>Original FPS (usually 60):</label>
+            <input type="number" id="fpsInput" value="60">
+        </div>
+
+        <div class="input-group">
+            <label>Select MP4 Video:</label>
+            <input type="file" id="fileInput" accept="video/mp4">
+        </div>
+
+        <button id="patchBtn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
+        <div id="status"></div>
+    </div>
+</div>
+
+<script>
+    // 1. PASTE YOUR GOOGLE WEB APP URL HERE
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwmYdykYGSZTNOfsHbUrODZpp_-y5ilu9kUzJyGb0IkQmS7MX8tmv6pHjAZ6lTFd13v7A/exec";
+
+    const authScreen = document.getElementById('auth-screen');
+    const appContent = document.getElementById('app-content');
+    const status = document.getElementById('status');
+
+    // 2. SECURITY BRIDGE LOGIC
+    async function checkAccess() {
+        const userKey = prompt("Enter License Key:");
+        if (!userKey) return;
+
+        status.className = "";
+        status.innerText = "Verifying license...";
+
+        try {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(userKey)}`);
+            const result = await response.json();
+
+            if (result.authorized) {
+                authScreen.style.display = "none";
+                appContent.style.display = "block";
+                localStorage.setItem('phantom_key', userKey);
+            } else {
+                alert("Invalid Key! Please contact Fahad Ahmad.");
+            }
+        } catch (err) {
+            alert("Connection error. Ensure your script is deployed correctly.");
+        }
+    }
+
+    // Auto-check if they already logged in recently
+    if (localStorage.getItem('phantom_key')) {
+        // You could auto-run checkAccess here, but prompts can be annoying.
+        // For now, let them click "Activate" or automate it.
+    }
+
+    // 3. BINARY PATCHING LOGIC (The "Brain")
+    async function patchVideo() {
+        const fileInput = document.getElementById('fileInput');
+        const fpsIn = parseFloat(document.getElementById('fpsInput').value);
+        const patchBtn = document.getElementById('patchBtn');
+
+        if (!fileInput.files[0]) {
+            showStatus("Please select an MP4 file.", "error");
+            return;
+        }
+
+        patchBtn.disabled = true;
+        showStatus("Processing binary data...", "");
+
+        try {
+            const file = fileInput.files[0];
+            const arrayBuffer = await file.arrayBuffer();
+            const data = new Uint8Array(arrayBuffer);
+            const view = new DataView(arrayBuffer);
+
+            const scaleTs = 30.0 / fpsIn; // Target 30 FPS logic
+            const atoms = ["mvhd", "mdhd"];
+            let patchCount = 0;
+
+            atoms.forEach(atom => {
+                const atomBytes = new TextEncoder().encode(atom);
+                for (let i = 0; i < data.length - 4; i++) {
+                    if (data[i] === atomBytes[0] && data[i+1] === atomBytes[1] && 
+                        data[i+2] === atomBytes[2] && data[i+3] === atomBytes[3]) {
+                        
+                        const hdr = i - 4;
+                        const version = data[hdr + 8];
+                        const tsOff = (version === 0) ? hdr + 20 : hdr + 28;
+
+                        if (tsOff + 4 <= data.length) {
+                            const oldTs = view.getUint32(tsOff, false); // Big Endian read
+                            const newTs = Math.floor(oldTs * scaleTs);
+                            view.setUint32(tsOff, newTs, false); // Big Endian write
+                            patchCount++;
+                        }
+                    }
+                }
+            });
+
+            // Step 4. TRIGGER DOWNLOAD
+            const blob = new Blob([view], { type: "video/mp4" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "phantom_patched_30fps.mp4";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            showStatus(`Success! Patched ${patchCount} headers. Check Downloads.`, "success");
+        } catch (e) {
+            showStatus("Error: " + e.message, "error");
+        } finally {
+            patchBtn.disabled = false;
+        }
+    }
+
+    function showStatus(text, className) {
+        status.innerText = text;
+        status.className = className;
+    }
+</script>
+
+</body>
+</html>
