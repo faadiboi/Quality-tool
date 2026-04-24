@@ -57,7 +57,13 @@
             background: linear-gradient(135deg, var(--neon-blue), var(--neon-green));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin: 0 0 8px 0;
+            margin: 0 auto 8px auto;
+            /* FIX FOR CLIPPED 'K' */
+            padding-right: 12px;
+            overflow: visible;
+            display: block;
+            width: fit-content;
+            white-space: nowrap;
         }
 
         .subtitle { 
@@ -144,7 +150,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* --- Updated Animations for both PC and Mobile --- */
         .social-item:hover { 
             transform: translateY(-3px) scale(1.05); 
             background: rgba(255, 255, 255, 0.05);
