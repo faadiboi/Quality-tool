@@ -3,165 +3,255 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Quality Tool - Web</title>
+    <title>PHANTOM QUALITY TOOL | Liquid Glass</title>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: white; text-align: center; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1a1a1a; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 450px; border: 1px solid #333; }
-        h2 { color: #2196F3; letter-spacing: 2px; margin-bottom: 30px; }
-        .input-group { text-align: left; margin-bottom: 20px; }
-        label { display: block; color: #888; font-size: 0.9em; margin-bottom: 8px; }
-        input[type="number"], input[type="file"] { width: 100%; padding: 12px; background: #262626; border: 1px solid #444; border-radius: 8px; color: white; box-sizing: border-box; }
-        button { width: 100%; padding: 15px; margin-top: 20px; background: #2196F3; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; font-size: 1em; }
-        button:hover { background: #1976D2; transform: translateY(-2px); }
-        button:disabled { background: #555; cursor: not-allowed; }
-        #status { margin-top: 20px; font-size: 0.9em; min-height: 1.2em; }
-        .success { color: #4CAF50; }
-        .error { color: #F44336; }
-        #app-content { display: none; } /* Hidden until authorized */
+        :root {
+            --bg-color: #020406;
+            --liquid-glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --neon-blue: #00f2ff;
+            --neon-green: #00ffaa;
+            --text-main: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 242, 255, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(0, 255, 170, 0.08) 0%, transparent 45%);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .liquid-card {
+            background: var(--liquid-glass);
+            backdrop-filter: blur(40px) saturate(200%) brightness(120%);
+            -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(120%);
+            border: 1px solid var(--glass-border);
+            border-radius: 60px; 
+            padding: 50px 40px;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+        }
+
+        h2 {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-style: italic;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        p { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 30px; }
+
+        .pill-btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 100px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: #000;
+            font-family: 'Exo 2', sans-serif;
+            font-weight: 800;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .pill-btn:hover { transform: scale(1.03); background: #fff; }
+
+        .file-box {
+            background: rgba(0, 110, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        input[type="file"] { color: var(--text-dim); font-size: 0.75rem; width: 100%; }
+
+        .credits-footer {
+            margin-top: 40px;
+            border-top: 1px solid var(--glass-border);
+            padding-top: 25px;
+        }
+
+        .made-with {
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            color: var(--text-dim);
+            margin-bottom: 20px;
+        }
+
+        .social-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .social-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            padding: 5px 15px;
+            border-radius: 50px;
+            transition: 0.3s;
+        }
+
+        .social-item i { font-size: 24px; }
+        .fa-tiktok { color: #ffffff; }
+        .fa-instagram { color: #E4405F; }
+
+        .social-username {
+            font-family: 'Exo 2', sans-serif;
+            color: var(--text-dim);
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .social-item:hover { transform: scale(1.1); background: rgba(255, 255, 255, 0.05); }
+        .social-item:hover .social-username { color: var(--neon-blue); }
+
+        #status { margin-top: 15px; font-size: 0.7rem; font-weight: 600; }
+        .success { color: var(--neon-green); }
+        .error { color: #ff3b30; }
+
+        #app-content { display: none; }
     </style>
 </head>
 <body>
 
-<div id="auth-screen" style="display: block;">
-    <div class="card">
-        <h2>SECURITY CHECK</h2>
-        <p>This tool is private. Please enter your license key.</p>
-        <button onclick="checkAccess()">ACTIVATE TOOL</button>
-    </div>
-</div>
-
-<div id="app-content">
-    <div class="card">
-        <h2>PHANTOM QUALITY TOOL</h2>
-        
-        <div class="input-group">
-            <label>Original FPS (usually 60):</label>
-            <input type="number" id="fpsInput" value="60">
+    <div id="auth-screen">
+        <div class="liquid-card">
+            <h2>SECURITY CHECK</h2>
+            <p id="auth-msg">PHANTOM QUALITY TOOL</p>
+            <button class="pill-btn" onclick="checkAccess()">ACTIVATE LICENSE</button>
+            
+            <div class="credits-footer">
+                <div class="made-with">Made with ❤️ By.</div>
+                <div class="social-container">
+                    <a href="https://www.tiktok.com/@faadiboii?_r=1&_t=ZN-95nhnYU5Xgk" target="_blank" class="social-item">
+                        <i class="fab fa-tiktok"></i>
+                        <span class="social-username">@faadiboii</span>
+                    </a>
+                    <a href="https://www.instagram.com/faadiboii?igsh=MWcxOXloN2xnYjRnMw==" target="_blank" class="social-item">
+                        <i class="fab fa-instagram"></i>
+                        <span class="social-username">@faadiboii</span>
+                    </a>
+                </div>
+            </div>
         </div>
-
-        <div class="input-group">
-            <label>Select MP4 Video:</label>
-            <input type="file" id="fileInput" accept="video/mp4">
-        </div>
-
-        <button id="patchBtn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
-        <div id="status"></div>
     </div>
-</div>
+
+    <div id="app-content">
+        <div class="liquid-card">
+            <h2>PHANTOM QUALITY TOOL</h2>
+            <p>BINARY METADATA OPTIMIZER</p>
+            <div class="file-box"><input type="file" id="fileInput" accept="video/mp4"></div>
+            <button id="patchBtn" class="pill-btn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
+            <div id="status"></div>
+
+            <div class="credits-footer">
+                <div class="made-with">Made with ❤️ By.</div>
+                <div class="social-container">
+                    <a href="https://www.tiktok.com/@faadiboii" target="_blank" class="social-item">
+                        <i class="fab fa-tiktok"></i>
+                        <span class="social-username">@faadiboii</span>
+                    </a>
+                    <a href="https://www.instagram.com/faadiboii" target="_blank" class="social-item">
+                        <i class="fab fa-instagram"></i>
+                        <span class="social-username">@faadiboii</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <script>
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyrTSY-gzGmHcVl0G4pkW2LxWNQBgUQmNn9ww18ApL_C0xjUgqLMi5RpcD40eUBKEmVZA/exec";
 
-    const authScreen = document.getElementById('auth-screen');
-    const appContent = document.getElementById('app-content');
-    const status = document.getElementById('status');
-
-    // 2. SECURITY BRIDGE LOGIC
     async function checkAccess() {
-    const userKey = prompt("Enter License Key:");
-    if (!userKey) return;
+        const userKey = prompt("Enter License Key:");
+        if (!userKey) return;
+        
+        // Show verification text
+        const authMsg = document.getElementById('auth-msg');
+        authMsg.innerText = "Verifying Identity and Device...";
+        authMsg.style.color = "#00f2ff";
 
-    status.className = "";
-    status.innerText = "Verifying license and device...";
-
-    // 1. GENERATE FINGERPRINT
-    // This combines browser type, screen resolution, and language
-    const fingerprint = navigator.userAgent + window.screen.width + window.screen.height + navigator.language;
-
-    try {
-        // 2. SEND KEY AND FINGERPRINT
-        // Note the added "&info=" part in the URL
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(userKey)}&info=${encodeURIComponent(fingerprint)}`);
-        const result = await response.json();
-
-        if (result.authorized) {
-            authScreen.style.display = "none";
-            appContent.style.display = "block";
-            localStorage.setItem('phantom_key', userKey);
-            
-            if(result.message) alert(result.message); // Shows "Key activated on this device!"
-        } else {
-            alert(result.message || "Invalid Key!");
+        const fingerprint = navigator.userAgent + window.screen.width + window.screen.height + navigator.language;
+        try {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?key=${encodeURIComponent(userKey)}&info=${encodeURIComponent(fingerprint)}`);
+            const result = await response.json();
+            if (result.authorized) {
+                document.getElementById('auth-screen').style.display = "none";
+                document.getElementById('app-content').style.display = "block";
+                localStorage.setItem('phantom_key', userKey);
+            } else { 
+                alert(result.message || "Invalid Key!"); 
+                authMsg.innerText = "PHANTOM QUALITY TOOL";
+                authMsg.style.color = "rgba(255, 255, 255, 0.6)";
+            }
+        } catch (err) { 
+            alert("Connection Error."); 
+            authMsg.innerText = "PHANTOM QUALITY TOOL";
         }
-    } catch (err) {
-        console.error(err);
-        alert("Connection error. Ensure your script is deployed as 'Anyone'.");
-    }
-}
-
-    // Auto-check if they already logged in recently
-    if (localStorage.getItem('phantom_key')) {
-        // You could auto-run checkAccess here, but prompts can be annoying.
-        // For now, let them click "Activate" or automate it.
     }
 
-    // 3. BINARY PATCHING LOGIC (The "Brain")
     async function patchVideo() {
         const fileInput = document.getElementById('fileInput');
-        const fpsIn = parseFloat(document.getElementById('fpsInput').value);
-        const patchBtn = document.getElementById('patchBtn');
-
-        if (!fileInput.files[0]) {
-            showStatus("Please select an MP4 file.", "error");
-            return;
-        }
-
-        patchBtn.disabled = true;
-        showStatus("Processing binary data...", "");
-
+        if (!fileInput.files[0]) { showStatus("Select file", "error"); return; }
+        const file = fileInput.files[0];
+        showStatus("Optimizing...", "success");
         try {
-            const file = fileInput.files[0];
             const arrayBuffer = await file.arrayBuffer();
             const data = new Uint8Array(arrayBuffer);
             const view = new DataView(arrayBuffer);
-
-            const scaleTs = 30.0 / fpsIn; // Target 30 FPS logic
             const atoms = ["mvhd", "mdhd"];
-            let patchCount = 0;
-
             atoms.forEach(atom => {
                 const atomBytes = new TextEncoder().encode(atom);
                 for (let i = 0; i < data.length - 4; i++) {
-                    if (data[i] === atomBytes[0] && data[i+1] === atomBytes[1] && 
-                        data[i+2] === atomBytes[2] && data[i+3] === atomBytes[3]) {
-                        
+                    if (data[i] === atomBytes[0] && data[i+1] === atomBytes[1] && data[i+2] === atomBytes[2] && data[i+3] === atomBytes[3]) {
                         const hdr = i - 4;
                         const version = data[hdr + 8];
                         const tsOff = (version === 0) ? hdr + 20 : hdr + 28;
-
                         if (tsOff + 4 <= data.length) {
-                            const oldTs = view.getUint32(tsOff, false); // Big Endian read
-                            const newTs = Math.floor(oldTs * scaleTs);
-                            view.setUint32(tsOff, newTs, false); // Big Endian write
-                            patchCount++;
+                            const oldTs = view.getUint32(tsOff, false);
+                            view.setUint32(tsOff, Math.floor(oldTs * (30.0/60.0)), false);
                         }
                     }
                 }
             });
-
-            // Step 4. TRIGGER DOWNLOAD
             const blob = new Blob([view], { type: "video/mp4" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "phantom_patched_30fps.mp4";
-            document.body.appendChild(a);
+            a.download = file.name.replace(".mp4", "_patched.mp4");
             a.click();
-            document.body.removeChild(a);
-            
-            showStatus(`Success! Patched ${patchCount} headers. Check Downloads.`, "success");
-        } catch (e) {
-            showStatus("Error: " + e.message, "error");
-        } finally {
-            patchBtn.disabled = false;
-        }
+            showStatus("Done!", "success");
+        } catch (e) { showStatus("Error", "error"); }
     }
-
     function showStatus(text, className) {
-        status.innerText = text;
-        status.className = className;
+        const s = document.getElementById('status');
+        s.innerText = text; s.className = className;
     }
 </script>
-
 </body>
 </html>
