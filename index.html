@@ -58,7 +58,6 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin: 0 auto 8px auto;
-            /* FIX FOR CLIPPED 'K' */
             padding-right: 12px;
             overflow: visible;
             display: block;
@@ -195,7 +194,8 @@
         <div class="liquid-card">
             <h2>PHANTOM QUALITY TOOL</h2>
             <p class="subtitle">BINARY METADATA OPTIMIZER</p>
-            <div class="file-box"><input type="file" id="fileInput" accept="video/mp4"></div>
+            <!-- Updated accept attribute to include .mov -->
+            <div class="file-box"><input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mov,.MOV"></div>
             <button id="patchBtn" class="pill-btn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
             <div id="status"></div>
 
@@ -243,12 +243,22 @@
     async function patchVideo() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) { showStatus("Select file", "error"); return; }
+        
         const file = fileInput.files[0];
+        
+        // --- AUTO-RENAME LOGIC ---
+        // Strip the old extension and force .mp4
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
+        const outputName = baseName + "_patched.mp4";
+
         showStatus("Optimizing...", "success");
+
         try {
             const arrayBuffer = await file.arrayBuffer();
             const data = new Uint8Array(arrayBuffer);
             const view = new DataView(arrayBuffer);
+            
+            // Algorithms for atoms work for both MOV and MP4 containers
             const atoms = ["mvhd", "mdhd"];
             atoms.forEach(atom => {
                 const atomBytes = new TextEncoder().encode(atom);
@@ -264,15 +274,24 @@
                     }
                 }
             });
+
+            // Force blob type to video/mp4 for consistency
             const blob = new Blob([view], { type: "video/mp4" });
             const url = URL.createObjectURL(blob);
+            
             const a = document.createElement('a');
             a.href = url;
-            a.download = file.name.replace(".mp4", "_patched.mp4");
+            a.download = outputName; 
             a.click();
+            
             showStatus("Done!", "success");
-        } catch (e) { showStatus("Error", "error"); }
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        } catch (e) { 
+            console.error(e);
+            showStatus("Error", "error"); 
+        }
     }
+
     function showStatus(text, className) {
         const s = document.getElementById('status');
         s.innerText = text; s.className = className;
