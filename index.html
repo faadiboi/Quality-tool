@@ -235,7 +235,6 @@ const idbKeyval = (() => {
         <div class="liquid-card">
             <h2>PHANTOM QUALITY TOOL</h2>
             <p class="subtitle">BINARY METADATA OPTIMIZER</p>
-            <!-- Updated accept attribute to include .mov -->
             <div class="file-box"><input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mov,.MOV"></div>
             <button id="patchBtn" class="pill-btn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
             <div id="status"></div>
@@ -286,65 +285,73 @@ const idbKeyval = (() => {
         if (!fileInput.files[0]) { showStatus("Select file", "error"); return; }
         
         const file = fileInput.files[0];
-        
-        // --- AUTO-RENAME LOGIC ---
-        // Strip the old extension and force .mp4
         const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
         const outputName = baseName + "_patched.mp4";
 
-        showStatus("Optimizing (Disk Mode)...", "success");
+        showStatus("Analyzing Headers...", "success");
 
         try {
-            const arrayBuffer = await file.arrayBuffer();
-            const data = new Uint8Array(arrayBuffer);
-            const view = new DataView(arrayBuffer);
-            
-            // Algorithms for atoms work for both MOV and MP4 containers
-            const atoms = ["mvhd", "mdhd"];
-            atoms.forEach(atom => {
-                const atomBytes = new TextEncoder().encode(atom);
-                for (let i = 0; i < data.length - 4; i++) {
-                    if (data[i] === atomBytes[0] && data[i+1] === atomBytes[1] && data[i+2] === atomBytes[2] && data[i+3] === atomBytes[3]) {
-                        const hdr = i - 4;
-                        const version = data[hdr + 8];
-                        const tsOff = (version === 0) ? hdr + 20 : hdr + 28;
-                        if (tsOff + 4 <= data.length) {
-                            const oldTs = view.getUint32(tsOff, false);
-                            view.setUint32(tsOff, Math.floor(oldTs * (30.0/60.0)), false);
+            const chunkSize = 10 * 1024 * 1024; // 10MB Slices for RAM stability
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            let patchedChunks = [];
+
+            for (let i = 0; i < totalChunks; i++) {
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
+                
+                // Read slice into small 10MB RAM block
+                const slice = file.slice(start, end);
+                const arrayBuffer = await slice.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                const view = new DataView(arrayBuffer);
+
+                const atoms = ["mvhd", "mdhd"];
+                atoms.forEach(atom => {
+                    const atomBytes = new TextEncoder().encode(atom);
+                    for (let j = 0; j < data.length - 4; j++) {
+                        if (data[j] === atomBytes[0] && data[j+1] === atomBytes[1] && 
+                            data[j+2] === atomBytes[2] && data[j+3] === atomBytes[3]) {
+                            
+                            const hdr = j - 4;
+                            const version = data[hdr + 8];
+                            const tsOff = (version === 0) ? hdr + 20 : hdr + 28;
+                            
+                            if (tsOff + 4 <= data.length) {
+                                const oldTs = view.getUint32(tsOff, false);
+                                view.setUint32(tsOff, Math.floor(oldTs * (30.0/60.0)), false);
+                            }
                         }
                     }
-                }
-            });
+                });
 
-            // Force blob type to video/mp4 for consistency
-            const patchedBlob = new Blob([view], { type: "video/mp4" });
-            
-            // --- INDEXED DB LOGIC STARTS HERE ---
-            // Save the blob to local disk storage
-            await idbKeyval.set('last_patched_video', patchedBlob);
+                patchedChunks.push(new Blob([view]));
+                showStatus(`Processing: ${Math.round((i/totalChunks)*100)}%`, "success");
+            }
 
-            // Free up the RAM by clearing the file input
+            // Assembly via Blob ensures iOS uses disk instead of RAM for the 1.1GB final file
+            const finalBlob = new Blob(patchedChunks, { type: "video/mp4" });
+            await idbKeyval.set('last_patched_video', finalBlob);
+
+            // Cleanup RAM
+            patchedChunks = []; 
             fileInput.value = ""; 
 
-            // Retrieve from IndexedDB for the download
+            // Trigger safe download
             const storedBlob = await idbKeyval.get('last_patched_video');
             const url = URL.createObjectURL(storedBlob);
-            
             const a = document.createElement('a');
             a.href = url;
-            a.download = outputName; 
-            document.body.appendChild(a); // Append for mobile browser stability
+            a.download = outputName;
+            document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            
-            showStatus("Done! Saved to Disk.", "success");
-            
-            // Clean up the object URL shortly after download triggers
-            setTimeout(() => URL.revokeObjectURL(url), 2000);
-            
-        } catch (e) { 
+
+            showStatus("Optimization Complete!", "success");
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        } catch (e) {
             console.error(e);
-            showStatus("Memory/Disk Error", "error"); 
+            showStatus("Memory/Disk Error", "error");
         }
     }
 
