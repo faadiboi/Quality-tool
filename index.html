@@ -6,6 +6,47 @@
     <title>PHANTOM QUALITY TOOL</title>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+/* 
+ * Built-in idb-keyval library to ensure it works 100% 
+ * even if the CDN is blocked or you are offline.
+ */
+const idbKeyval = (() => {
+  'use strict';
+  class Store {
+    constructor(dbName = 'keyval-store', storeName = 'keyval') {
+      this.storeName = storeName;
+      this._dbp = new Promise((resolve, reject) => {
+        const openreq = indexedDB.open(dbName, 1);
+        openreq.onerror = () => reject(openreq.error);
+        openreq.onsuccess = () => resolve(openreq.result);
+        openreq.onupgradeneeded = () => openreq.result.createObjectStore(storeName);
+      });
+    }
+    _withIDBStore(type, callback) {
+      return this._dbp.then(db => new Promise((resolve, reject) => {
+        const transaction = db.transaction(this.storeName, type);
+        transaction.oncomplete = () => resolve();
+        transaction.onabort = transaction.onerror = () => reject(transaction.error);
+        callback(transaction.objectStore(this.storeName));
+      }));
+    }
+  }
+  let defaultGetStore;
+  function getStore() { return defaultGetStore || (defaultGetStore = new Store()); }
+  return {
+    get: (key, store = getStore()) => {
+      let req;
+      return store._withIDBStore('readonly', s => { req = s.get(key); }).then(() => req.result);
+    },
+    set: (key, value, store = getStore()) => {
+      return store._withIDBStore('readwrite', s => { s.put(value, key); });
+    }
+  };
+})();
+</script>
+
     <style>
         :root {
             --bg-color: #020406;
@@ -251,7 +292,7 @@
         const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
         const outputName = baseName + "_patched.mp4";
 
-        showStatus("Optimizing...", "success");
+        showStatus("Optimizing (Disk Mode)...", "success");
 
         try {
             const arrayBuffer = await file.arrayBuffer();
@@ -276,19 +317,34 @@
             });
 
             // Force blob type to video/mp4 for consistency
-            const blob = new Blob([view], { type: "video/mp4" });
-            const url = URL.createObjectURL(blob);
+            const patchedBlob = new Blob([view], { type: "video/mp4" });
+            
+            // --- INDEXED DB LOGIC STARTS HERE ---
+            // Save the blob to local disk storage
+            await idbKeyval.set('last_patched_video', patchedBlob);
+
+            // Free up the RAM by clearing the file input
+            fileInput.value = ""; 
+
+            // Retrieve from IndexedDB for the download
+            const storedBlob = await idbKeyval.get('last_patched_video');
+            const url = URL.createObjectURL(storedBlob);
             
             const a = document.createElement('a');
             a.href = url;
             a.download = outputName; 
+            document.body.appendChild(a); // Append for mobile browser stability
             a.click();
+            document.body.removeChild(a);
             
-            showStatus("Done!", "success");
+            showStatus("Done! Saved to Disk.", "success");
+            
+            // Clean up the object URL shortly after download triggers
             setTimeout(() => URL.revokeObjectURL(url), 2000);
+            
         } catch (e) { 
             console.error(e);
-            showStatus("Error", "error"); 
+            showStatus("Memory/Disk Error", "error"); 
         }
     }
 
