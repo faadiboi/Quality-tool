@@ -3,49 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Phantom Quality Tool">
     <title>PHANTOM QUALITY TOOL</title>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@300;600;800&family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <script>
-/* 
- * Built-in idb-keyval library to ensure it works 100% 
- * even if the CDN is blocked or you are offline.
- */
-const idbKeyval = (() => {
-  'use strict';
-  class Store {
-    constructor(dbName = 'keyval-store', storeName = 'keyval') {
-      this.storeName = storeName;
-      this._dbp = new Promise((resolve, reject) => {
-        const openreq = indexedDB.open(dbName, 1);
-        openreq.onerror = () => reject(openreq.error);
-        openreq.onsuccess = () => resolve(openreq.result);
-        openreq.onupgradeneeded = () => openreq.result.createObjectStore(storeName);
-      });
-    }
-    _withIDBStore(type, callback) {
-      return this._dbp.then(db => new Promise((resolve, reject) => {
-        const transaction = db.transaction(this.storeName, type);
-        transaction.oncomplete = () => resolve();
-        transaction.onabort = transaction.onerror = () => reject(transaction.error);
-        callback(transaction.objectStore(this.storeName));
-      }));
-    }
-  }
-  let defaultGetStore;
-  function getStore() { return defaultGetStore || (defaultGetStore = new Store()); }
-  return {
-    get: (key, store = getStore()) => {
-      let req;
-      return store._withIDBStore('readonly', s => { req = s.get(key); }).then(() => req.result);
-    },
-    set: (key, value, store = getStore()) => {
-      return store._withIDBStore('readwrite', s => { s.put(value, key); });
-    }
-  };
-})();
-</script>
+    /* * Built-in idb-keyval library for Disk-Backed Storage
+     */
+    const idbKeyval = (() => {
+      'use strict';
+      class Store {
+        constructor(dbName = 'keyval-store', storeName = 'keyval') {
+          this.storeName = storeName;
+          this._dbp = new Promise((resolve, reject) => {
+            const openreq = indexedDB.open(dbName, 1);
+            openreq.onerror = () => reject(openreq.error);
+            openreq.onsuccess = () => resolve(openreq.result);
+            openreq.onupgradeneeded = () => openreq.result.createObjectStore(storeName);
+          });
+        }
+        _withIDBStore(type, callback) {
+          return this._dbp.then(db => new Promise((resolve, reject) => {
+            const transaction = db.transaction(this.storeName, type);
+            transaction.oncomplete = () => resolve();
+            transaction.onabort = transaction.onerror = () => reject(transaction.error);
+            callback(transaction.objectStore(this.storeName));
+          }));
+        }
+      }
+      let defaultGetStore;
+      function getStore() { return defaultGetStore || (defaultGetStore = new Store()); }
+      return {
+        get: (key, store = getStore()) => {
+          let req;
+          return store._withIDBStore('readonly', s => { req = s.get(key); }).then(() => req.result);
+        },
+        set: (key, value, store = getStore()) => {
+          return store._withIDBStore('readwrite', s => { s.put(value, key); });
+        }
+      };
+    })();
+    </script>
 
     <style>
         :root {
@@ -127,9 +128,18 @@ const idbKeyval = (() => {
             cursor: pointer;
             transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
             box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
         }
 
         .pill-btn:active { transform: scale(0.95); }
+
+        .btn-reset {
+            background: rgba(255, 59, 48, 0.15) !important;
+            color: #ff3b30 !important;
+            border: 1px solid rgba(255, 59, 48, 0.3) !important;
+            font-size: 0.75rem !important;
+            padding: 12px !important;
+        }
 
         .file-box {
             background: rgba(0, 242, 255, 0.05);
@@ -200,7 +210,7 @@ const idbKeyval = (() => {
             transition: 0.1s ease;
         }
 
-        #status { margin-top: 12px; font-size: 0.7rem; font-weight: 700; }
+        #status { margin-top: 12px; font-size: 0.7rem; font-weight: 700; height: 14px; }
         .success { color: var(--neon-green); }
         .error { color: #ff3b30; }
 
@@ -237,6 +247,7 @@ const idbKeyval = (() => {
             <p class="subtitle">BINARY METADATA OPTIMIZER</p>
             <div class="file-box"><input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mov,.MOV"></div>
             <button id="patchBtn" class="pill-btn" onclick="patchVideo()">PATCH & DOWNLOAD</button>
+            <button class="pill-btn btn-reset" onclick="clearToolStorage()">RESET STORAGE</button>
             <div id="status"></div>
 
             <div class="credits-footer">
@@ -280,6 +291,19 @@ const idbKeyval = (() => {
         } catch (err) { alert("Connection Error."); }
     }
 
+    async function clearToolStorage() {
+        if(!confirm("Wipe all cached video data?")) return;
+        try {
+            showStatus("Wiping...", "success");
+            await idbKeyval.set('last_patched_video', null);
+            const DBDeleteRequest = indexedDB.deleteDatabase("keyval-store");
+            DBDeleteRequest.onsuccess = () => {
+                showStatus("Cleaned!", "success");
+                setTimeout(() => location.reload(), 600);
+            };
+        } catch (e) { showStatus("Reset Error", "error"); }
+    }
+
     async function patchVideo() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files[0]) { showStatus("Select file", "error"); return; }
@@ -288,10 +312,10 @@ const idbKeyval = (() => {
         const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
         const outputName = baseName + "_patched.mp4";
 
-        showStatus("Analyzing Headers...", "success");
+        showStatus("Allocating RAM...", "success");
 
         try {
-            const chunkSize = 10 * 1024 * 1024; // 10MB Slices for RAM stability
+            const chunkSize = 8 * 1024 * 1024; // 8MB Chunks for maximum stability
             const totalChunks = Math.ceil(file.size / chunkSize);
             let patchedChunks = [];
 
@@ -299,7 +323,6 @@ const idbKeyval = (() => {
                 const start = i * chunkSize;
                 const end = Math.min(start + chunkSize, file.size);
                 
-                // Read slice into small 10MB RAM block
                 const slice = file.slice(start, end);
                 const arrayBuffer = await slice.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
@@ -311,11 +334,9 @@ const idbKeyval = (() => {
                     for (let j = 0; j < data.length - 4; j++) {
                         if (data[j] === atomBytes[0] && data[j+1] === atomBytes[1] && 
                             data[j+2] === atomBytes[2] && data[j+3] === atomBytes[3]) {
-                            
                             const hdr = j - 4;
                             const version = data[hdr + 8];
                             const tsOff = (version === 0) ? hdr + 20 : hdr + 28;
-                            
                             if (tsOff + 4 <= data.length) {
                                 const oldTs = view.getUint32(tsOff, false);
                                 view.setUint32(tsOff, Math.floor(oldTs * (30.0/60.0)), false);
@@ -325,20 +346,17 @@ const idbKeyval = (() => {
                 });
 
                 patchedChunks.push(new Blob([view]));
-                showStatus(`Processing: ${Math.round((i/totalChunks)*100)}%`, "success");
+                if (i % 2 === 0) showStatus(`Patching: ${Math.round((i/totalChunks)*100)}%`, "success");
+                if (i % 10 === 0) await new Promise(r => setTimeout(r, 1));
             }
 
-            // Assembly via Blob ensures iOS uses disk instead of RAM for the 1.1GB final file
+            showStatus("Finalizing...", "success");
             const finalBlob = new Blob(patchedChunks, { type: "video/mp4" });
+            patchedChunks = []; 
+
             await idbKeyval.set('last_patched_video', finalBlob);
 
-            // Cleanup RAM
-            patchedChunks = []; 
-            fileInput.value = ""; 
-
-            // Trigger safe download
-            const storedBlob = await idbKeyval.get('last_patched_video');
-            const url = URL.createObjectURL(storedBlob);
+            const url = URL.createObjectURL(finalBlob);
             const a = document.createElement('a');
             a.href = url;
             a.download = outputName;
@@ -346,12 +364,13 @@ const idbKeyval = (() => {
             a.click();
             document.body.removeChild(a);
 
-            showStatus("Optimization Complete!", "success");
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            showStatus("DONE!", "success");
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
 
         } catch (e) {
             console.error(e);
-            showStatus("Memory/Disk Error", "error");
+            if (e.name === "QuotaExceededError") showStatus("Disk Full! Use RESET.", "error");
+            else showStatus("Memory Error", "error");
         }
     }
 
@@ -361,4 +380,4 @@ const idbKeyval = (() => {
     }
 </script>
 </body>
-</html>
+</html> 
