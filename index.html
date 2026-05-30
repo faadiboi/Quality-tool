@@ -294,7 +294,7 @@
     async function clearToolStorage() {
         if(!confirm("Wipe all cached video data?")) return;
         try {
-            showStatus("Wiping...", "success");
+            showStatus("Wiped...", "success");
             await idbKeyval.set('last_patched_video', null);
             const DBDeleteRequest = indexedDB.deleteDatabase("keyval-store");
             DBDeleteRequest.onsuccess = () => {
