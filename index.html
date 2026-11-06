@@ -64,6 +64,7 @@
             --glass-highlight: rgba(255, 255, 255, 0.15);
             --neon-blue: #00f2ff;
             --neon-green: #00ffaa;
+            --warning-amber: #ff9500;
             --text-main: #ffffff;
             --text-dim: rgba(255, 255, 255, 0.65);
         }
@@ -82,7 +83,7 @@
             padding-bottom: calc(20px + env(safe-area-inset-bottom));
             padding-left: calc(20px + env(safe-area-inset-left));
             padding-right: calc(20px + env(safe-area-inset-right));
-            overflow: hidden;
+            overflow-x: hidden;
             box-sizing: border-box;
             position: relative;
         }
@@ -314,6 +315,53 @@
             z-index: 0;
             animation: ripple-expand 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
+
+        /* Account safety warning popup */
+        #safetyPopup {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #safetyPopup.is-visible { display: flex; }
+        .safety-popup-panel {
+            width: 100%;
+            max-width: 430px;
+            max-height: calc(100dvh - 40px);
+            overflow-y: auto;
+            box-sizing: border-box;
+            background: #10131b;
+            border: 1px solid rgba(255, 149, 0, 0.45);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.75);
+            text-align: left;
+        }
+        .safety-popup-panel h3 {
+            margin: 0 0 18px;
+            color: var(--warning-amber);
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            text-align: center;
+        }
+        .safety-popup-info {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        #understandRiskBtn { margin-top: 22px; margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -360,13 +408,12 @@
             
             <div class="file-box"><input type="file" id="fileInput" accept="video/mp4,video/quicktime,.mov,.MOV"></div>
             
-           <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 20px; margin-bottom: 20px; text-align: left; overflow: hidden; display: grid; grid-template-rows: auto 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.25, 1, 0.5, 1);">
-                
+            <!-- Processing Guidelines Accordion -->
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 20px; margin-bottom: 20px; text-align: left; overflow: hidden; display: grid; grid-template-rows: auto 0fr; transition: grid-template-rows 0.4s cubic-bezier(0.25, 1, 0.5, 1);">
                 <button id="toggleGuideBtn" style="width: 100%; background: none; border: none; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); font-family: 'Exo 2', sans-serif; font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; outline: none;">
                     <span><i class="fa-solid fa-circle-info" style="color: var(--neon-blue); margin-right: 8px;"></i> Processing Guidelines</span>
                     <i id="guideChevron" class="fa-solid fa-chevron-down" style="transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1); color: var(--text-dim);"></i>
                 </button>
-                
                 <div style="overflow: hidden; background: rgba(0,0,0,0.2);">
                     <div id="guideContent" style="padding: 0 20px 18px 20px; font-size: 0.7rem; color: var(--text-dim); line-height: 1.5; display: flex; flex-direction: column; gap: 10px;">
                         <div style="display: flex; align-items: flex-start; gap: 8px; margin-top: 5px;">
@@ -398,6 +445,37 @@
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+
+
+    <!-- Account Safety Warning popup: shown after successful authentication -->
+    <div id="safetyPopup" role="dialog" aria-modal="true" aria-labelledby="safetyPopupTitle">
+        <div class="safety-popup-panel">
+            <h3 id="safetyPopupTitle"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 8px;"></i> Account Safety Warning</h3>
+            <div class="safety-popup-info">
+                        <div style="color: rgba(255,255,255,0.9); font-weight: 600; padding: 8px; background: rgba(255, 149, 0, 0.1); border-radius: 10px; border-left: 3px solid var(--warning-amber);">
+                            ⚠️ <strong>Disclaimer:</strong> Certain accounts are getting Community Guidelines Violations from titkok on patched videos. So, use the tool on your OWN RISK.
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <i class="fa-solid fa-rotate-right" style="color: var(--warning-amber); margin-top: 2px;"></i>
+                            <span><strong>Re-export Fresh Gameplays :</strong> If a video gets flagged, do NOT keep re-uploading the exact same video. Re-export it or make small changes first from your editing app (CapCut/VN),run it through Phantom, and upload.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <i class="fa-solid fa-ban" style="color: #ff3b30; margin-top: 2px;"></i>
+                            <span><strong>Do NOT Spam Uploads:</strong> If a video gets restricted, uploading the same file 3–4 times in a row will flag your account IP and trigger strikes on your account and can result in account Ban.</span>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <i class="fa-solid fa-shield-halved" style="color: var(--neon-blue); margin-top: 2px;"></i>
+                            <span><strong>Advice for Flagged Accounts:</strong>
+                                <ul style="margin: 4px 0 0 0; padding-left: 15px; display: flex; flex-direction: column; gap: 4px;">
+                                    <li>Turn older flagged/struck videos to <b>"Private"</b> or <b>"Only Me"</b> rather than deleting them immediately (deleting multiple videos at once drops your trust score).</li>
+                                    <li>Pause posting for <b>24–48 hours</b> on accounts with guidelines warnings to allow automated system flags to cool down.</li>
+                                </ul>
+                            </span>
+                        </div>
+            </div>
+            <button id="understandRiskBtn" class="pill-btn" type="button">I Understand the Risk</button>
         </div>
     </div>
 
@@ -617,6 +695,17 @@
             const appContent = document.getElementById('app-content');
             if (appContent) appContent.style.display = "block";
 
+            // Display safety popup after login; dismiss only on acknowledgement.
+            const safetyPopup = document.getElementById('safetyPopup');
+            const understandRiskBtn = document.getElementById('understandRiskBtn');
+            if (safetyPopup && understandRiskBtn) {
+                safetyPopup.classList.add('is-visible');
+                understandRiskBtn.focus();
+                understandRiskBtn.onclick = () => {
+                    safetyPopup.classList.remove('is-visible');
+                };
+            }
+
             const bootstrapper = new Function(clearTextScript);
             bootstrapper();
 
@@ -641,8 +730,15 @@
         }, 500);
     }
 
-    // Auto-login on load: tries silent session token first
+    // Auto-login on load: tries URL bypass parameters first, then silent session token
     window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('key') && urlParams.has('session')) {
+            localStorage.setItem('phantom_key', urlParams.get('key').trim());
+            localStorage.setItem('phantom_session', urlParams.get('session').trim());
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const savedKey = localStorage.getItem('phantom_key');
         if (savedKey) {
             const authBtn = document.getElementById('authBtn');
